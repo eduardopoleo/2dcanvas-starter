@@ -1,4 +1,4 @@
-# Three.js Journey
+#  2d canvas starter
 
 ## Setup
 Download [Node.js](https://nodejs.org/en/download/).
