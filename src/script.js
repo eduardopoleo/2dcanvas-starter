@@ -1,102 +1,81 @@
 import './style.css'
-import * as THREE from 'three'
-import * as debug from 'lil-gui'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
-// SET UP
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
-}
+const canvas = document.getElementById('canvas1')
+const ctx = canvas.getContext('2d')
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-// SCENE, CAMERA 
-const scene = new THREE.Scene()
-const canvas = document.querySelector('canvas.webgl')
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 2000)
-camera.position.z = 5
-scene.add(camera)
+  window.addEventListener('resize', function() {
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+  })
 
-// CONTROLS
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-const debugUI = new debug.GUI()
+  const mouse = {
+    x: undefined,
+    y: undefined
+  }
 
-// GEOMETRIES
-const material = new THREE.MeshStandardMaterial()
+  window.addEventListener('click', (event) => {
+    mouse.x = event.x
+    mouse.y = event.y
+    // drawCircle()
+  })
 
-// SPHERE
-const sphereGeometry = new THREE.SphereGeometry(0.6)
-const sphere = new THREE.Mesh(sphereGeometry, material)
-sphere.position.x = -2
-scene.add(sphere)
+  window.addEventListener('mousemove', (event) => {
+    mouse.x = event.x
+    mouse.y = event.y
+  })
 
-// BOX
-const boxGeometry = new THREE.BoxGeometry(1,1,1)
-const box = new THREE.Mesh(boxGeometry, material)
-debugUI.add(box.position, 'x').name('box x').min(-10).max(10)
-scene.add(box)
+  class Particle {
+    constructor() {
+      this.size = Math.random() * 40 + 1
+      this.x = this.size + Math.random() * (canvas.width - 2 * this.size)
+      this.y = this.size + Math.random() * (canvas.height - 2 * this.size)
+      this.speedX = Math.random() * 3 - 1.5
+      this.speedY = Math.random() * 3 - 1.5
+    }
 
-// TORUS
-const torusGeometry = new THREE.TorusGeometry(0.5, 0.1, 16, 100)
-const torus = new THREE.Mesh(torusGeometry, material)
-torus.position.x = 2
-scene.add(torus)
+    update() {
+      if (this.x + this.size > canvas.width || this.x - this.size < 0) {
+        this.speedX = -this.speedX
+      }
 
-// FLOOR
-const floorGeometry = new THREE.BoxGeometry(8,6,0.1)
-const floor = new THREE.Mesh(floorGeometry, material)
-floor.position.y = -1
-floor.rotation.x = Math.PI / 2
-scene.add(floor)
+      if (this.y + this.size > canvas.height || this.y - this.size < 0) {
+        this.speedY = -this.speedY
+      }
 
-// LIGHTS
-const light = new THREE.PointLight(0xffffff, 1, 100)
-light.position.set(5, 5, 5)
-scene.add(light)
+      this.x += this.speedX
+      this.y += this.speedY
+    }
 
-const pointLightHelper = new THREE.PointLightHelper(light, 1)
-scene.add(pointLightHelper)
-window.requestAnimationFrame(() => {
-    SpotLightHelper.update()
-})
+    draw() {
+      ctx.beginPath()
+      ctx.fillStyle = 'red'
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
 
-// RESIZE listener
-window.addEventListener('resize', () => {
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-    
-    camera.aspect = sizes.width / sizes.height
-    // must be call after any change of the parameters
-    // otherwise things like resizing will distort the images
-    camera.updateProjectionMatrix()
-    
-    renderer.setSize(sizes.width, sizes.height)
-    //  to prevent blurring out cameras output
-})
+  const particlesArray = []
+  function init() {
+    for (let i = 0; i < 100; i++ ) {
+      particlesArray.push(new Particle())
+    }
+  }
+  init()
 
-// RENDERING
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  const handleParticles = () => {
+    for (let i = 0; i < particlesArray.length; i++) {
+      const particle = particlesArray[i]
+      particle.update()
+      particle.draw()
+    }
+  }
 
-const rotate = (mesh, speed) => {
-    mesh.rotation.x = speed
-    mesh.rotation.y = speed
-}
+  const animate = () => {
+    ctx.clearRect(0,0, canvas.width, canvas.height)
+    handleParticles()
+    requestAnimationFrame(animate)
+  }
 
-const clock  = new THREE.Clock()
-
-const animate = () => {
-    renderer.render(scene, camera)
-    const rotationSpeed = clock.getElapsedTime() * 0.4
-    rotate(box, rotationSpeed)
-    rotate(sphere, rotationSpeed)
-    rotate(torus, rotationSpeed)
-
-    window.requestAnimationFrame(animate)
-    controls.update()
-}
-
-animate()
+  animate()
